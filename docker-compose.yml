@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  jupyterhub:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyterhub
+    container_name: jupyterhub
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro
+      - "jupyterhub-data:/data"
+    environment:
+      JUPYTERHUB_CRYPT_KEY: "your-secret-key-change-in-production"
+    networks:
+      - jupyterhub-network
+
+  usage-quota-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: usage-quota-service
+    command: ["fastapi", "dev", "src/jupyterhub_usage_quota/service/app.py", "--port", "9000", "--host", "0.0.0.0"]
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./src/jupyterhub_usage_quota:/app/src/jupyterhub_usage_quota:ro
+    environment:
+      JUPYTERHUB_API_URL: "http://jupyterhub:8000/hub/api"
+      JUPYTERHUB_SERVICE_PREFIX: "/services/usage-quota/"
+      JUPYTERHUB_SERVICE_NAME: "usage-quota"
+      JUPYTERHUB_API_TOKEN: "your-service-token-change-in-production"
+      JUPYTERHUB_BASE_URL: "http://jupyterhub:8000"
+      PROMETHEUS_URL: "http://prometheus:9090"
+    networks:
+      - jupyterhub-network
+    depends_on:
+      - jupyterhub
+
+volumes:
+  jupyterhub-data:
+
+networks:
+  jupyterhub-network:
+    name: jupyterhub-network

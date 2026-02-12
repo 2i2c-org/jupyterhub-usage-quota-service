@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Usage</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #ffffff;
+            color: #1f2937;
+        }
+        .container {
+            background: white;
+            padding: 0;
+        }
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin: 0 0 48px 0;
+            font-size: 16px;
+        }
+        .metric-item {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 48px;
+        }
+        .icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+        }
+        .metric-content {
+            flex: 1;
+        }
+        .metric-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 6px 0;
+        }
+        .metric-usage {
+            font-size: 15px;
+            color: #6b7280;
+            margin: 0 0 4px 0;
+        }
+        .metric-remaining {
+            font-size: 15px;
+            color: #10b981;
+            font-weight: 500;
+            margin: 0;
+        }
+        .footer-note {
+            color: #374151;
+            font-size: 15px;
+            margin-top: 64px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Usage</h1>
+        <p class="subtitle">View your current home storage usage and quota</p>
+
+        <div class="metric-item">
+            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <div class="metric-content">
+                <div class="metric-label">Home storage</div>
+                <div class="metric-usage">{{ usage_data.usage_gb }} GiB used / {{ usage_data.quota_gb }} GiB quota</div>
+                <div class="metric-remaining">{{ remaining_gb }} GiB remaining</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Contact your JupyterHub Admin if you need additional quota.
+        </div>
+    </div>
+</body>
+</html>

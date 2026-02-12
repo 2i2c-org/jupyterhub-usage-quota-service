@@ -1,0 +1,16 @@
+FROM quay.io/jupyterhub/jupyterhub:4.1
+
+# Install minimal dependencies for single-user server
+RUN pip install --no-cache-dir \
+    jupyterlab \
+    notebook \
+    jupyter_core
+
+# Ensure jupyterhub-singleuser is available
+RUN python -m pip install --no-cache-dir jupyterhub
+
+# Copy the jupyterhub_usage_quota package and install it
+COPY pyproject.toml README.md /tmp/jupyterhub_usage_quota/
+COPY src/ /tmp/jupyterhub_usage_quota/src/
+RUN pip install --no-cache-dir /tmp/jupyterhub_usage_quota/ && \
+    rm -rf /tmp/jupyterhub_usage_quota
