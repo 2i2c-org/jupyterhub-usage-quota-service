@@ -4,7 +4,7 @@ Tests for the main application
 
 import pytest
 
-from jupyterhub_usage_quota.service.prometheus_client import PrometheusClient
+from jupyterhub_usage_quota_service.app.prometheus_client import PrometheusClient
 
 
 class TestPrometheusClient:
@@ -49,6 +49,6 @@ def test_import():
     """
     Test that the package can be imported
     """
-    import jupyterhub_usage_quota
+    import jupyterhub_usage_quota_service
 
-    assert jupyterhub_usage_quota.__version__ == "0.1.0"
+    assert jupyterhub_usage_quota_service.__version__ == "0.1.0"

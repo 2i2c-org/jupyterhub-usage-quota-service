@@ -18,4 +18,4 @@ RUN pip install --no-cache-dir -e .
 EXPOSE 9000
 
 # Run the application
-CMD ["fastapi", "run", "src/jupyterhub_usage_quota/service/app.py", "--port", "9000"]
+CMD ["fastapi", "run", "src/jupyterhub_usage_quota_service/app/app.py", "--port", "9000"]

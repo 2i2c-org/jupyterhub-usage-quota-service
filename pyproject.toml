@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "jupyterhub-usage-quota"
+name = "jupyterhub-usage-quota-service"
 version = "0.1.0"
 description = "A JupyterHub service to display user storage (and eventually compute) quota and usage"
 readme = "README.md"
@@ -46,7 +46,7 @@ Homepage = "https://github.com/2i2c-org/jupyterhub-usage-quota-service"
 Repository = "https://github.com/2i2c-org/jupyterhub-usage-quota-service"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/jupyterhub_usage_quota"]
+packages = ["src/jupyterhub_usage_quota_service"]
 
 [tool.ruff]
 line-length = 100

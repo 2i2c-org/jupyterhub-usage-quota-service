@@ -8,7 +8,7 @@ import os
 
 __version__ = "0.1.0"
 
-from jupyterhub_usage_quota.jupyterhub_custom_handler import UsageHandler
+from jupyterhub_usage_quota_service.jupyterhub_custom_handler import UsageHandler
 
 __all__ = ["UsageHandler", "__version__", "get_template_path"]
 

@@ -21,11 +21,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: usage-quota-service
-    command: ["fastapi", "dev", "src/jupyterhub_usage_quota/service/app.py", "--port", "9000", "--host", "0.0.0.0"]
+    command: ["fastapi", "dev", "src/jupyterhub_usage_quota_service/app/app.py", "--port", "9000", "--host", "0.0.0.0"]
     ports:
       - "9000:9000"
     volumes:
-      - ./src/jupyterhub_usage_quota:/app/src/jupyterhub_usage_quota:ro
+      - ./src/jupyterhub_usage_quota_service:/app/src/jupyterhub_usage_quota_service:ro
     environment:
       JUPYTERHUB_API_URL: "http://jupyterhub:8000/hub/api"
       JUPYTERHUB_SERVICE_PREFIX: "/services/usage-quota/"

@@ -4,7 +4,7 @@ JupyterHub configuration for local development with usage-quota service
 
 import os
 
-from jupyterhub_usage_quota import UsageHandler, get_template_path
+from jupyterhub_usage_quota_service import UsageHandler, get_template_path
 
 # Basic configuration
 c.JupyterHub.ip = "0.0.0.0"

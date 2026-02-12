@@ -1,3 +1,3 @@
 """
-Tests for jupyterhub-usage-quota service
+Tests for jupyterhub-usage-quota-service
 """
