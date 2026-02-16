@@ -6,6 +6,8 @@ import logging
 import os
 from typing import Any
 
+import random
+
 import aiohttp
 
 logger = logging.getLogger(__name__)
@@ -82,9 +84,9 @@ class PrometheusClient:
 
         logger.info(f"Fetching usage data for user: {username}")
 
-        # Mock data for development
-        mock_usage_bytes = 5_368_709_120  # 5 GB
+        # Mock data for development — randomly pick 50% or 95% usage
         mock_quota_bytes = 10_737_418_240  # 10 GB
+        mock_usage_bytes = int(mock_quota_bytes * random.choice([0.50, 0.95]))
 
         usage_gb = mock_usage_bytes / (1024**3)
         quota_gb = mock_quota_bytes / (1024**3)
