@@ -33,6 +33,7 @@ services:
       JUPYTERHUB_API_TOKEN: "your-service-token-change-in-production"
       JUPYTERHUB_BASE_URL: "http://jupyterhub:8000"
       PROMETHEUS_URL: "http://prometheus:9090"
+      # PROMETHEUS_NAMESPACE: "prod"  # Set to filter Prometheus results by namespace
     networks:
       - jupyterhub-network
     depends_on:
