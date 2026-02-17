@@ -100,14 +100,9 @@ async def home(request: Request):
     async with PrometheusClient() as prom_client:
         usage_data = await prom_client.get_user_usage(user["name"])
 
-    # Calculate remaining storage
-    remaining_gb = usage_data["quota_gb"] - usage_data["usage_gb"]
-
     template = jinja_env.get_template("usage.html")
     html_content = template.render(
         usage_data=usage_data,
-        remaining_gb=f"{remaining_gb:.2f}",
-        usage_percent=usage_data["percentage"],
     )
     return HTMLResponse(html_content)
 

@@ -95,7 +95,7 @@
         <p class="subtitle">View your current home storage usage and quota</p>
 
         <div class="metric-item">
-            {% if usage_percent >= 90 %}
+            {% if usage_data.percentage >= 90 %}
             <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                 <circle cx="9.5" cy="12" r="1" fill="currentColor" stroke="none"></circle>
@@ -111,12 +111,12 @@
                 <div class="metric-label">Home storage</div>
                 <div class="progress-row">
                     <div class="progress-track">
-                        <div class="progress-fill" style="width: {{ usage_percent }}%;{% if usage_percent >= 90 %} background: #ef4444;{% endif %}"></div>
+                        <div class="progress-fill" style="width: {{ usage_data.percentage }}%;{% if usage_data.percentage >= 90 %} background: #ef4444;{% endif %}"></div>
                     </div>
-                    <span class="progress-label"{% if usage_percent >= 90 %} style="color: #ef4444;"{% endif %}>{{ usage_percent }}%</span>
+                    <span class="progress-label"{% if usage_data.percentage >= 90 %} style="color: #ef4444;"{% endif %}>{{ "%.1f"|format(usage_data.percentage) }}%</span>
                 </div>
-                <div class="metric-usage">{{ usage_data.usage_gb }} GiB used / {{ usage_data.quota_gb }} GiB quota</div>
-                <div class="metric-remaining"{% if usage_percent >= 90 %} style="color: #ef4444;"{% endif %}>{{ remaining_gb }} GiB remaining</div>
+                <div class="metric-usage">{{ "%.1f"|format(usage_data.usage_gb) }} GiB used / {{ "%.1f"|format(usage_data.quota_gb) }} GiB quota</div>
+                <div class="metric-remaining"{% if usage_data.percentage >= 90 %} style="color: #ef4444;"{% endif %}>{{ "%.1f"|format(usage_data.quota_gb - usage_data.usage_gb) }} GiB remaining</div>
             </div>
         </div>
 
