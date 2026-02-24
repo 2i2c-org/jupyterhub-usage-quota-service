@@ -2,6 +2,7 @@
 Async Prometheus client for querying user usage quota and usage
 """
 
+import asyncio
 import logging
 import os
 import random
@@ -74,6 +75,59 @@ class PrometheusClient:
 
         return None
 
+    def _parse_value_result(self, data: dict[str, Any]) -> int | None:
+        """
+        Parse a Prometheus query response for a metric value, filtering by namespace.
+
+        Returns:
+            The value in bytes or None if no matching result found.
+        """
+        if data.get("status") != "success":
+            return None
+
+        results = data.get("data", {}).get("result", [])
+        if not results:
+            return None
+
+        for result in results:
+            metric = result.get("metric", {})
+            if metric.get("namespace") == self.namespace:
+                value_pair = result.get("value", [])
+                if len(value_pair) == 2:
+                    value_bytes = int(float(value_pair[1]))
+                    return value_bytes
+                return None
+
+        return None
+
+    def _parse_timestamp_result(self, data: dict[str, Any]) -> datetime | None:
+        """
+        Parse a Prometheus timestamp() query response, filtering by namespace.
+
+        Returns:
+            The actual scrape timestamp or None if no matching result found.
+        """
+        if data.get("status") != "success":
+            return None
+
+        results = data.get("data", {}).get("result", [])
+        if not results:
+            return None
+
+        for result in results:
+            metric = result.get("metric", {})
+            if metric.get("namespace") == self.namespace:
+                value_pair = result.get("value", [])
+                if len(value_pair) == 2:
+                    # The value from timestamp() query is the actual scrape timestamp
+                    scrape_timestamp = datetime.fromtimestamp(
+                        float(value_pair[1]), tz=timezone.utc
+                    )
+                    return scrape_timestamp
+                return None
+
+        return None
+
     def _get_mock_data(self, username: str) -> dict[str, Any]:
         """
         Return mock data for development when PROMETHEUS_NAMESPACE is not set.
@@ -118,37 +172,54 @@ class PrometheusClient:
 
         logger.info(f"Fetching usage data for user: {username}")
 
-        quota_query = (
-            f'label_replace(last_over_time(dirsize_hard_limit_bytes'
-            f'{{namespace!="", directory="{username}"}}[7d]),'
+        base_quota_metric = (
+            f'dirsize_hard_limit_bytes{{namespace!="", directory="{username}"}}'
+        )
+        base_usage_metric = (
+            f'dirsize_total_size_bytes{{namespace!="", directory="{username}"}}'
+        )
+
+        # Query for raw values
+        quota_value_query = (
+            f"label_replace({base_quota_metric},"
             f' "username", "$1", "directory", "(.*)")'
         )
-        usage_query = (
-            f'label_replace(last_over_time(dirsize_total_size_bytes'
-            f'{{namespace!="", directory="{username}"}}[7d]),'
+        usage_value_query = (
+            f"label_replace({base_usage_metric},"
+            f' "username", "$1", "directory", "(.*)")'
+        )
+
+        # Query for actual scrape timestamp using timestamp() on the raw vector
+        usage_timestamp_query = (
+            f"label_replace(timestamp({base_usage_metric}),"
             f' "username", "$1", "directory", "(.*)")'
         )
 
         try:
-            quota_data = await self.query(quota_query)
-            usage_data = await self.query(usage_query)
-        except Exception:
+            # Execute all three Prometheus queries concurrently
+            quota_value_data, usage_value_data, usage_timestamp_data = (
+                await asyncio.gather(
+                    self.query(quota_value_query),
+                    self.query(usage_value_query),
+                    self.query(usage_timestamp_query),
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error fetching usage data concurrently for {username}: {e}")
             return {
                 "username": username,
                 "error": "Unable to reach Prometheus. Please try again later.",
             }
 
-        quota_result = self._parse_query_result(quota_data)
-        usage_result = self._parse_query_result(usage_data)
+        quota_bytes = self._parse_value_result(quota_value_data)
+        usage_bytes = self._parse_value_result(usage_value_data)
+        last_updated_dt = self._parse_timestamp_result(usage_timestamp_data)
 
-        if quota_result is None or usage_result is None:
+        if quota_bytes is None or usage_bytes is None or last_updated_dt is None:
             return {
                 "username": username,
                 "error": "No storage data found for your account.",
             }
-
-        quota_bytes, _ = quota_result
-        usage_bytes, last_updated_dt = usage_result
 
         usage_gb = usage_bytes / (1024**3)
         quota_gb = quota_bytes / (1024**3)
