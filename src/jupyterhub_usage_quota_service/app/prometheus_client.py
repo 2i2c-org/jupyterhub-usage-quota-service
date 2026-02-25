@@ -94,8 +94,14 @@ class PrometheusClient:
             if metric.get("namespace") == self.namespace:
                 value_pair = result.get("value", [])
                 if len(value_pair) == 2:
-                    value_bytes = int(float(value_pair[1]))
-                    return value_bytes
+                    try:
+                        value_bytes = int(float(value_pair[1]))
+                        return value_bytes
+                    except (ValueError, TypeError):
+                        logger.warning(
+                            f"Non-numeric value in Prometheus response: {value_pair[1]}"
+                        )
+                        return None
                 return None
 
         return None

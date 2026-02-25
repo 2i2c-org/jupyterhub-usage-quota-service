@@ -41,8 +41,9 @@ CALLBACK_PATH = "oauth_callback"
 REDIRECT_URI = f"{PUBLIC_HUB_URL}{SERVICE_PREFIX}{CALLBACK_PATH}"
 
 # Add Session Middleware to store the OAuth state
-# 'secret_key' should be random in production
-app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
+# 'secret_key' should be random in production, but can be set via SESSION_SECRET_KEY for testing
+SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", secrets.token_hex(32))
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 
 
 # -----------------------------------------------------------------------------

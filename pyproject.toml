@@ -36,6 +36,11 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",         # Coverage reporting
+    "respx>=0.20",             # Mock httpx requests (for JupyterHub API)
+    "pytest-mock>=3.10",       # Enhanced mocking capabilities
+    "beautifulsoup4>=4.11",    # HTML parsing for template tests
+    "freezegun>=1.2",          # Time mocking for timestamps
     "ruff>=0.4",
     "mypy>=1.0",
     "pre-commit>=3.0",
@@ -69,6 +74,9 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
 
 [tool.mypy]
 python_version = "3.10"
