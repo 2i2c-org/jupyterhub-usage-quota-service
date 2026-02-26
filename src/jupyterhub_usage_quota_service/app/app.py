@@ -24,9 +24,7 @@ HUB_API_URL = os.environ.get("JUPYTERHUB_API_URL", "http://jupyterhub:8081/hub/a
 # The prefix for this service (e.g., /services/my-service/)
 SERVICE_PREFIX = os.environ.get("JUPYTERHUB_SERVICE_PREFIX", "/")
 # The external URL users use to access the Hub (e.g., http://localhost:8000)
-PUBLIC_HUB_URL = os.environ.get(
-    "JUPYTERHUB_EXTERNAL_URL", "http://localhost:8000"
-).rstrip("/")
+PUBLIC_HUB_URL = os.environ.get("JUPYTERHUB_EXTERNAL_URL", "http://localhost:8000").rstrip("/")
 # OAuth client ID for this service
 CLIENT_ID = f"service-{os.environ.get('JUPYTERHUB_SERVICE_NAME', 'fastapi-service')}"
 
@@ -41,8 +39,9 @@ CALLBACK_PATH = "oauth_callback"
 REDIRECT_URI = f"{PUBLIC_HUB_URL}{SERVICE_PREFIX}{CALLBACK_PATH}"
 
 # Add Session Middleware to store the OAuth state
-# 'secret_key' should be random in production
-app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
+# 'secret_key' should be random in production, but can be set via SESSION_SECRET_KEY for testing
+SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", secrets.token_hex(32))
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 
 
 # -----------------------------------------------------------------------------
@@ -131,9 +130,7 @@ async def oauth_callback(request: Request, code: str, state: str):
         )
 
         if resp.status_code != 200:
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve access token"
-            )
+            raise HTTPException(status_code=500, detail="Failed to retrieve access token")
 
         token_data = resp.json()
         access_token = token_data["access_token"]

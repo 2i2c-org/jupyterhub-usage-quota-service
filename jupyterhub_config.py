@@ -43,7 +43,8 @@ c.JupyterHub.services = [
         ),
         "oauth_client_id": "service-usage-quota",  # OAuth client ID for the service
         "oauth_no_confirm": True,  # Skip OAuth confirmation for managed services
-        "oauth_redirect_uri": "http://localhost:8000/services/usage-quota/oauth_callback",  # Absolute browser-facing URL
+        # Absolute browser-facing URL
+        "oauth_redirect_uri": "http://localhost:8000/services/usage-quota/oauth_callback",
     }
 ]
 

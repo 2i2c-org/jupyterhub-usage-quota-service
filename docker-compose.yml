@@ -32,7 +32,10 @@ services:
       JUPYTERHUB_SERVICE_NAME: "usage-quota"
       JUPYTERHUB_API_TOKEN: "your-service-token-change-in-production"
       JUPYTERHUB_BASE_URL: "http://jupyterhub:8000"
-      PROMETHEUS_URL: "http://prometheus:9090"
+      PROMETHEUS_URL: "http://host.docker.internal:9090"
+      PROMETHEUS_NAMESPACE: "staging"  # Set to filter Prometheus results by namespace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - jupyterhub-network
     depends_on:

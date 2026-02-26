@@ -1,4 +1,4 @@
-FROM quay.io/jupyterhub/jupyterhub:4.1
+FROM quay.io/jupyterhub/jupyterhub:5
 
 # Install minimal dependencies for single-user server
 RUN pip install --no-cache-dir \
