@@ -33,6 +33,17 @@ class TestGetCurrentUserDependency:
         # Should use http://localhost:8000 (PUBLIC_HUB_URL from mock_env_vars)
         assert location.startswith("http://localhost:8000/hub/api/oauth2/authorize")
 
+    @pytest.mark.asyncio
+    async def test_returns_user_when_in_session(self, mock_env_vars):
+        """Should return user directly when already in session"""
+        from jupyterhub_usage_quota_service.app.app import get_current_user
+
+        mock_user = {"name": "testuser", "admin": False}
+        request = MockRequest(session_data={"user": mock_user})
+
+        result = await get_current_user(request)
+        assert result == mock_user
+
 
 class TestCompleteOAuthFlow:
     """Integration test for complete OAuth flow"""

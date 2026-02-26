@@ -1,10 +1,12 @@
 """Tests for Prometheus integration and client"""
 
 import asyncio
+import random
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+import respx
 
 from jupyterhub_usage_quota_service.app.prometheus_client import PrometheusClient
 from tests.fixtures.prometheus_responses import (
@@ -421,6 +423,85 @@ class TestPrometheusUserWithNoData:
         assert "No storage data found" in usage_data["error"]
 
         await client.close()
+
+
+class TestPrometheusClientQuery:
+    """Test the query method of PrometheusClient"""
+
+    @pytest.mark.asyncio
+    async def test_query_raises_request_error(self):
+        """Should propagate httpx.RequestError"""
+        client = PrometheusClient()
+        client.prometheus_url = "http://prometheus:9090"
+
+        with respx.mock:
+            respx.get("http://prometheus:9090/api/v1/query").mock(
+                side_effect=httpx.RequestError("Connection refused")
+            )
+            with pytest.raises(httpx.RequestError):
+                await client.query("up")
+
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_query_raises_on_http_error_status(self):
+        """Should propagate HTTPStatusError on non-2xx responses"""
+        client = PrometheusClient()
+        client.prometheus_url = "http://prometheus:9090"
+
+        with respx.mock:
+            respx.get("http://prometheus:9090/api/v1/query").mock(
+                return_value=httpx.Response(500)
+            )
+            with pytest.raises(httpx.HTTPStatusError):
+                await client.query("up")
+
+        await client.close()
+
+
+class TestPrometheusClientContextManager:
+    """Test async context manager protocol"""
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager_returns_self(self):
+        """__aenter__ should return the client instance"""
+        async with PrometheusClient() as client:
+            assert isinstance(client, PrometheusClient)
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager_closes_on_exit(self):
+        """__aexit__ should close the underlying httpx client"""
+        async with PrometheusClient() as client:
+            underlying = client.client
+
+        assert underlying.is_closed
+
+
+class TestGetMockDataErrorScenario:
+    """Test both branches of _get_mock_data"""
+
+    def test_returns_error_dict_when_scenario_is_error(self, monkeypatch):
+        """Should return an error dict when random.choice yields 'error'"""
+        monkeypatch.setattr(random, "choice", lambda _: "error")
+        client = PrometheusClient()
+        result = client._get_mock_data("testuser")
+
+        assert result["username"] == "testuser"
+        assert "error" in result
+        assert "Prometheus" in result["error"]
+
+    def test_returns_usage_dict_when_scenario_is_numeric(self, monkeypatch):
+        """Should return usage data when random.choice yields a numeric scenario"""
+        monkeypatch.setattr(random, "choice", lambda _: 0.50)
+        client = PrometheusClient()
+        result = client._get_mock_data("testuser")
+
+        assert result["username"] == "testuser"
+        assert "error" not in result
+        assert result["percentage"] == 50.0
+        assert "usage_bytes" in result
+        assert "quota_bytes" in result
+        assert "last_updated" in result
 
 
 class TestPrometheusEdgeCaseValues:

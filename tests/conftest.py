@@ -1,6 +1,10 @@
 """Shared pytest fixtures for jupyterhub-usage-quota-service tests"""
 
+import sys
+
 import pytest
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 
@@ -18,9 +22,6 @@ def set_session(client: TestClient, app, session_data: dict):
         session_data: Dictionary of session data to set
     """
     # Create a temporary endpoint to set session data
-    from fastapi import Request
-    from fastapi.responses import JSONResponse
-
     @app.get("/__test_set_session__")
     async def set_test_session(request: Request):
         for key, value in session_data.items():
@@ -49,9 +50,6 @@ def get_session(client: TestClient, app) -> dict:
     Returns:
         Dictionary of session data, or empty dict if no session
     """
-    from fastapi import Request
-    from fastapi.responses import JSONResponse
-
     @app.get("/__test_get_session__")
     async def get_test_session(request: Request):
         return JSONResponse(dict(request.session))
@@ -71,8 +69,6 @@ def get_session(client: TestClient, app) -> dict:
 @pytest.fixture
 def app(mock_env_vars):
     """Provide the FastAPI application instance with reloaded environment variables"""
-    import sys
-
     # Remove the app module from sys.modules to force a reload
     if 'jupyterhub_usage_quota_service.app.app' in sys.modules:
         del sys.modules['jupyterhub_usage_quota_service.app.app']

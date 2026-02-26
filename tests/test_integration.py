@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 import respx
+from fastapi.testclient import TestClient
 from httpx import Response
 
 from tests.conftest import set_session
@@ -93,9 +94,6 @@ class TestMultiUserScenarios:
 
     def test_different_users_see_their_own_data(self, app, mock_env_vars, mocker):
         """Each user should see only their own usage data"""
-        from fastapi.testclient import TestClient
-        from unittest.mock import AsyncMock
-
         # Create two separate clients for two different users
         client1 = TestClient(app)
         client2 = TestClient(app)
