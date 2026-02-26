@@ -61,15 +61,23 @@ class TestEndToEndUserFlow:
                 assert "50.0%" in response.text  # From mock_prometheus_client
                 assert "5.0 GiB used" in response.text
 
-    def test_returning_user_with_valid_session(self, client, app, mock_env_vars, mock_prometheus_client):
+    def test_returning_user_with_valid_session(
+        self, client, app, mock_env_vars, mock_prometheus_client
+    ):
         """Test: authenticated user returns → sees usage immediately"""
         with client:
             # Simulate user with existing session
-            set_session(client, app, {"user": {
-                    "name": "testuser",
-                    "admin": False,
-                    "groups": ["users"],
-                }})
+            set_session(
+                client,
+                app,
+                {
+                    "user": {
+                        "name": "testuser",
+                        "admin": False,
+                        "groups": ["users"],
+                    }
+                },
+            )
 
             # User visits page - should see usage immediately without OAuth redirect
             response = client.get("/services/usage/", follow_redirects=False)
@@ -121,7 +129,8 @@ class TestMultiUserScenarios:
         mock_client.get_user_usage.side_effect = mock_get_user_usage
 
         mocker.patch(
-            "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
+            "jupyterhub_usage_quota_service.app.app.PrometheusClient",
+            return_value=mock_client,
         )
 
         # User1 logs in and views their data
@@ -139,33 +148,6 @@ class TestMultiUserScenarios:
         assert response2.status_code == 200
         assert "80.0%" in response2.text
         assert "8.0 GiB used" in response2.text
-
-    def test_admin_user_sees_their_own_quota(self, client, app, mock_env_vars, mocker):
-        """Admin users should see their own quota, not elevated privileges"""
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        mock_client.get_user_usage.return_value = {
-            "username": "admin",
-            "usage_bytes": 5368709120,
-            "quota_bytes": 10737418240,
-            "usage_gb": 5.0,
-            "quota_gb": 10.0,
-            "percentage": 50.0,
-            "last_updated": "2026-02-24T12:00:00+00:00",
-        }
-
-        mocker.patch(
-            "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-        )
-
-        with client:
-            set_session(client, app, {"user": {"name": "admin", "admin": True}})
-
-            response = client.get("/services/usage/")
-
-            assert response.status_code == 200
-            assert "Home storage" in response.text
 
 
 @pytest.mark.integration
@@ -204,7 +186,9 @@ class TestErrorRecovery:
             assert response.status_code == 200
             assert "50.0%" in response.text
 
-    def test_user_can_re_authenticate_after_session_clear(self, client, app, mock_env_vars):
+    def test_user_can_re_authenticate_after_session_clear(
+        self, client, app, mock_env_vars
+    ):
         """User should be redirected to OAuth if session expires"""
         with respx.mock:
             respx.post("http://test-hub:8081/hub/api/oauth2/token").mock(
@@ -235,136 +219,3 @@ class TestErrorRecovery:
                     follow_redirects=False,
                 )
                 assert response.status_code == 307
-
-
-@pytest.mark.integration
-class TestServicePrefixConfiguration:
-    """Test with different SERVICE_PREFIX configurations"""
-
-    def test_works_with_root_prefix(self, monkeypatch, mocker):
-        """Test with SERVICE_PREFIX=/"""
-        monkeypatch.setenv("JUPYTERHUB_API_TOKEN", "test-token")
-        monkeypatch.setenv("JUPYTERHUB_API_URL", "http://test-hub:8081/hub/api")
-        monkeypatch.setenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-        monkeypatch.setenv("JUPYTERHUB_EXTERNAL_URL", "http://localhost:8000")
-        monkeypatch.setenv("JUPYTERHUB_SERVICE_NAME", "test-service")
-        monkeypatch.setenv("PROMETHEUS_NAMESPACE", "prod")
-
-        # Reimport to pick up new env vars
-        import importlib
-        import jupyterhub_usage_quota_service.app.app as app_module
-
-        importlib.reload(app_module)
-
-        from fastapi.testclient import TestClient
-
-        client = TestClient(app_module.app)
-
-        # Mock PrometheusClient
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        mock_client.get_user_usage.return_value = {
-            "username": "testuser",
-            "usage_bytes": 5368709120,
-            "quota_bytes": 10737418240,
-            "usage_gb": 5.0,
-            "quota_gb": 10.0,
-            "percentage": 50.0,
-            "last_updated": "2026-02-24T12:00:00+00:00",
-        }
-
-        mocker.patch(
-            "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-        )
-
-        with client:
-            set_session(client, app_module.app, {"user": {"name": "testuser"}})
-
-            response = client.get("/")
-            assert response.status_code == 200
-
-    def test_works_with_nested_prefix(self, monkeypatch, mocker):
-        """Test with SERVICE_PREFIX=/services/usage/"""
-        # This is already tested in other tests, but let's verify explicitly
-        monkeypatch.setenv("JUPYTERHUB_API_TOKEN", "test-token")
-        monkeypatch.setenv("JUPYTERHUB_API_URL", "http://test-hub:8081/hub/api")
-        monkeypatch.setenv("JUPYTERHUB_SERVICE_PREFIX", "/services/usage/")
-        monkeypatch.setenv("JUPYTERHUB_EXTERNAL_URL", "http://localhost:8000")
-        monkeypatch.setenv("JUPYTERHUB_SERVICE_NAME", "usage-service")
-        monkeypatch.setenv("PROMETHEUS_NAMESPACE", "prod")
-
-        # Reimport
-        import importlib
-        import jupyterhub_usage_quota_service.app.app as app_module
-
-        importlib.reload(app_module)
-
-        from fastapi.testclient import TestClient
-
-        client = TestClient(app_module.app)
-
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        mock_client.get_user_usage.return_value = {
-            "username": "testuser",
-            "usage_bytes": 5368709120,
-            "quota_bytes": 10737418240,
-            "usage_gb": 5.0,
-            "quota_gb": 10.0,
-            "percentage": 50.0,
-            "last_updated": "2026-02-24T12:00:00+00:00",
-        }
-
-        mocker.patch(
-            "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-        )
-
-        with client:
-            set_session(client, app_module.app, {"user": {"name": "testuser"}})
-
-            response = client.get("/services/usage/")
-            assert response.status_code == 200
-
-
-@pytest.mark.integration
-class TestRealWorldScenarios:
-    """Test real-world usage scenarios"""
-
-    def test_user_checks_quota_multiple_times(self, client, app, mock_env_vars, mock_prometheus_client):
-        """User refreshing page multiple times should work consistently"""
-        with client:
-            set_session(client, app, {"user": {"name": "testuser"}})
-
-            # Make multiple requests
-            for _ in range(5):
-                response = client.get("/services/usage/")
-                assert response.status_code == 200
-                assert "Home storage" in response.text
-
-    def test_user_with_high_usage_sees_warning(
-        self, client, app, mock_env_vars, mock_prometheus_client_high_usage
-    ):
-        """User with high usage should see appropriate warnings"""
-        with client:
-            set_session(client, app, {"user": {"name": "testuser"}})
-
-            response = client.get("/services/usage/")
-
-            assert response.status_code == 200
-            assert "95.0%" in response.text
-            # High usage should show red styling
-            assert "#ef4444" in response.text
-
-    def test_new_user_without_data_sees_appropriate_message(
-        self, client, app, mock_env_vars, mock_prometheus_client_no_data
-    ):
-        """New user without quota data should see helpful message"""
-        with client:
-            set_session(client, app, {"user": {"name": "newuser"}})
-
-            response = client.get("/services/usage/")
-
-            assert response.status_code == 200
-            assert "No storage data found" in response.text

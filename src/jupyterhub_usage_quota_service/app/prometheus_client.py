@@ -9,7 +9,7 @@ import random
 from datetime import datetime, timezone
 from typing import Any
 
-import aiohttp
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -22,117 +22,57 @@ class PrometheusClient:
     def __init__(self):
         self.prometheus_url = os.environ.get("PROMETHEUS_URL", "http://prometheus:9090")
         self.namespace = os.environ.get("PROMETHEUS_NAMESPACE", "")
-        self.session = None
-
-    async def _get_session(self) -> aiohttp.ClientSession:
-        if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
-        return self.session
+        self.client = httpx.AsyncClient()
 
     async def query(self, query: str) -> dict[str, Any]:
         """
         Execute a PromQL query
         """
-        session = await self._get_session()
         url = f"{self.prometheus_url}/api/v1/query"
         params = {"query": query}
 
         try:
-            async with session.get(url, params=params) as response:
-                response.raise_for_status()
-                data = await response.json()
-                return data
-        except aiohttp.ClientError as e:
+            response = await self.client.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except httpx.RequestError as e:
             logger.error(f"Error querying Prometheus: {e}")
             raise
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             raise
 
-    def _parse_query_result(self, data: dict[str, Any]) -> tuple[int, datetime] | None:
+    def _find_matching_result(self, data: dict[str, Any]) -> list | None:
         """
-        Parse a Prometheus query response, filtering by namespace.
+        Find the [timestamp, value] pair for the matching namespace in a Prometheus response.
 
         Returns:
-            Tuple of (value_bytes, timestamp) or None if no matching result found.
+            The value pair list or None if no matching result found.
         """
         if data.get("status") != "success":
             return None
-
-        results = data.get("data", {}).get("result", [])
-        if not results:
-            return None
-
-        for result in results:
-            metric = result.get("metric", {})
-            if metric.get("namespace") == self.namespace:
+        for result in data.get("data", {}).get("result", []):
+            if result.get("metric", {}).get("namespace") == self.namespace:
                 value_pair = result.get("value", [])
-                if len(value_pair) == 2:
-                    timestamp = datetime.fromtimestamp(value_pair[0], tz=timezone.utc)
-                    value_bytes = int(value_pair[1])
-                    return value_bytes, timestamp
-                return None
-
+                return value_pair if len(value_pair) == 2 else None
         return None
 
     def _parse_value_result(self, data: dict[str, Any]) -> int | None:
-        """
-        Parse a Prometheus query response for a metric value, filtering by namespace.
-
-        Returns:
-            The value in bytes or None if no matching result found.
-        """
-        if data.get("status") != "success":
+        pair = self._find_matching_result(data)
+        if not pair:
+            return None
+        try:
+            return int(float(pair[1]))
+        except (ValueError, TypeError):
+            logger.warning(f"Non-numeric value in Prometheus response: {pair[1]}")
             return None
 
-        results = data.get("data", {}).get("result", [])
-        if not results:
-            return None
-
-        for result in results:
-            metric = result.get("metric", {})
-            if metric.get("namespace") == self.namespace:
-                value_pair = result.get("value", [])
-                if len(value_pair) == 2:
-                    try:
-                        value_bytes = int(float(value_pair[1]))
-                        return value_bytes
-                    except (ValueError, TypeError):
-                        logger.warning(
-                            f"Non-numeric value in Prometheus response: {value_pair[1]}"
-                        )
-                        return None
-                return None
-
-        return None
+    def _with_label_replace(self, metric: str) -> str:
+        return f'label_replace({metric}, "username", "$1", "directory", "(.*)")'
 
     def _parse_timestamp_result(self, data: dict[str, Any]) -> datetime | None:
-        """
-        Parse a Prometheus timestamp() query response, filtering by namespace.
-
-        Returns:
-            The actual scrape timestamp or None if no matching result found.
-        """
-        if data.get("status") != "success":
-            return None
-
-        results = data.get("data", {}).get("result", [])
-        if not results:
-            return None
-
-        for result in results:
-            metric = result.get("metric", {})
-            if metric.get("namespace") == self.namespace:
-                value_pair = result.get("value", [])
-                if len(value_pair) == 2:
-                    # The value from timestamp() query is the actual scrape timestamp
-                    scrape_timestamp = datetime.fromtimestamp(
-                        float(value_pair[1]), tz=timezone.utc
-                    )
-                    return scrape_timestamp
-                return None
-
-        return None
+        pair = self._find_matching_result(data)
+        return datetime.fromtimestamp(float(pair[1]), tz=timezone.utc) if pair else None
 
     def _get_mock_data(self, username: str) -> dict[str, Any]:
         """
@@ -185,21 +125,9 @@ class PrometheusClient:
             f'dirsize_total_size_bytes{{namespace!="", directory="{username}"}}'
         )
 
-        # Query for raw values
-        quota_value_query = (
-            f"label_replace({base_quota_metric},"
-            f' "username", "$1", "directory", "(.*)")'
-        )
-        usage_value_query = (
-            f"label_replace({base_usage_metric},"
-            f' "username", "$1", "directory", "(.*)")'
-        )
-
-        # Query for actual scrape timestamp using timestamp() on the raw vector
-        usage_timestamp_query = (
-            f"label_replace(timestamp({base_usage_metric}),"
-            f' "username", "$1", "directory", "(.*)")'
-        )
+        quota_value_query = self._with_label_replace(base_quota_metric)
+        usage_value_query = self._with_label_replace(base_usage_metric)
+        usage_timestamp_query = self._with_label_replace(f"timestamp({base_usage_metric})")
 
         try:
             # Execute all three Prometheus queries concurrently
@@ -242,11 +170,10 @@ class PrometheusClient:
         }
 
     async def close(self):
-        if self.session and not self.session.closed:
-            await self.session.close()
+        await self.client.aclose()
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, _exc_type, _exc_val, _exc_tb):
         await self.close()

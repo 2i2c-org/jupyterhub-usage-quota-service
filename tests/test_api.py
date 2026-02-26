@@ -11,7 +11,9 @@ from tests.conftest import set_session, get_session
 class TestHomeRoute:
     """Test the home route (GET /)"""
 
-    def test_home_redirects_to_oauth_when_not_authenticated(self, client, mock_env_vars):
+    def test_home_redirects_to_oauth_when_not_authenticated(
+        self, client, mock_env_vars
+    ):
         """Unauthenticated user should be redirected to JupyterHub OAuth"""
         response = client.get("/services/usage/", follow_redirects=False)
 
@@ -29,13 +31,17 @@ class TestHomeRoute:
     ):
         """Authenticated user should see usage data"""
         # Set session with mock user
-        set_session(client, app, {
-            "user": {
-                "name": "testuser",
-                "admin": False,
-                "groups": ["users"],
-            }
-        })
+        set_session(
+            client,
+            app,
+            {
+                "user": {
+                    "name": "testuser",
+                    "admin": False,
+                    "groups": ["users"],
+                }
+            },
+        )
 
         response = client.get("/services/usage/")
 
@@ -84,7 +90,9 @@ class TestHomeRoute:
 class TestOAuthCallbackRoute:
     """Test the OAuth callback route"""
 
-    def test_callback_with_valid_state_and_code(self, client, app, mock_env_vars, mock_oauth_state):
+    def test_callback_with_valid_state_and_code(
+        self, client, app, mock_env_vars, mock_oauth_state
+    ):
         """Valid OAuth callback should authenticate user and redirect"""
         with respx.mock:
             # Mock token exchange
@@ -146,7 +154,9 @@ class TestOAuthCallbackRoute:
         assert response.status_code == 400
         assert "OAuth state mismatch" in response.text
 
-    def test_callback_with_token_exchange_failure(self, client, app, mock_env_vars, mock_oauth_state):
+    def test_callback_with_token_exchange_failure(
+        self, client, app, mock_env_vars, mock_oauth_state
+    ):
         """Failed token exchange should return 500"""
         with respx.mock:
             # Mock token exchange to fail
@@ -164,7 +174,9 @@ class TestOAuthCallbackRoute:
         assert response.status_code == 500
         assert "Failed to retrieve access token" in response.text
 
-    def test_callback_with_user_fetch_failure(self, client, app, mock_env_vars, mock_oauth_state):
+    def test_callback_with_user_fetch_failure(
+        self, client, app, mock_env_vars, mock_oauth_state
+    ):
         """Failed user fetch should return 500"""
         with respx.mock:
             # Token exchange succeeds
@@ -187,7 +199,9 @@ class TestOAuthCallbackRoute:
         assert response.status_code == 500
         assert "Failed to retrieve user data" in response.text
 
-    def test_callback_stores_user_in_session(self, client, app, mock_env_vars, mock_oauth_state):
+    def test_callback_stores_user_in_session(
+        self, client, app, mock_env_vars, mock_oauth_state
+    ):
         """Successful auth should store complete user data in session"""
         with respx.mock:
             respx.post("http://test-hub:8081/hub/api/oauth2/token").mock(
@@ -216,7 +230,9 @@ class TestOAuthCallbackRoute:
         session = get_session(client, app)
         assert session["user"] == user_data
 
-    def test_callback_clears_oauth_state_from_session(self, client, app, mock_env_vars, mock_oauth_state):
+    def test_callback_clears_oauth_state_from_session(
+        self, client, app, mock_env_vars, mock_oauth_state
+    ):
         """OAuth state should be removed after successful auth"""
         with respx.mock:
             respx.post("http://test-hub:8081/hub/api/oauth2/token").mock(
@@ -254,7 +270,8 @@ class TestServicePrefixConfiguration:
     def test_callback_route_uses_service_prefix(self, client, mock_env_vars):
         """Callback route should be at SERVICE_PREFIX/oauth_callback"""
         response = client.get(
-            "/services/usage/oauth_callback?code=test&state=test", follow_redirects=False
+            "/services/usage/oauth_callback?code=test&state=test",
+            follow_redirects=False,
         )
         # Should return 400 (invalid state) not 404 (not found)
         assert response.status_code == 400

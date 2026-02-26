@@ -55,154 +55,6 @@ PROMETHEUS_TIMESTAMP_50_PERCENT = {
     },
 }
 
-# Sample Prometheus response with 90% usage (threshold for warning)
-PROMETHEUS_QUOTA_90_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_hard_limit_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314029.985, "10737418240"],  # 10 GB
-            },
-        ],
-    },
-}
-
-PROMETHEUS_USAGE_90_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "9663676416"],  # 9 GB (90%)
-            },
-        ],
-    },
-}
-
-# Sample Prometheus response with 95% usage (high warning)
-PROMETHEUS_QUOTA_95_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_hard_limit_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314029.985, "10737418240"],  # 10 GB
-            },
-        ],
-    },
-}
-
-PROMETHEUS_USAGE_95_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "10200547328"],  # 9.5 GB (95%)
-            },
-        ],
-    },
-}
-
-# 0% usage
-PROMETHEUS_QUOTA_0_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_hard_limit_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314029.985, "10737418240"],  # 10 GB
-            },
-        ],
-    },
-}
-
-PROMETHEUS_USAGE_0_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "0"],  # 0 bytes
-            },
-        ],
-    },
-}
-
-# 100% usage
-PROMETHEUS_QUOTA_100_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_hard_limit_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314029.985, "10737418240"],  # 10 GB
-            },
-        ],
-    },
-}
-
-PROMETHEUS_USAGE_100_PERCENT = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "10737418240"],  # 10 GB (100%)
-            },
-        ],
-    },
-}
-
 # Empty results (no data for user)
 PROMETHEUS_EMPTY_RESULT = {
     "status": "success",
@@ -264,7 +116,7 @@ PROMETHEUS_MALFORMED_NON_NUMERIC = {
     },
 }
 
-# Multiple namespaces in response
+# Multiple namespaces in response (prod=10GB, staging=5GB)
 PROMETHEUS_MULTIPLE_NAMESPACES_QUOTA = {
     "status": "success",
     "data": {
@@ -292,35 +144,9 @@ PROMETHEUS_MULTIPLE_NAMESPACES_QUOTA = {
     },
 }
 
-PROMETHEUS_MULTIPLE_NAMESPACES_USAGE = {
-    "status": "success",
-    "data": {
-        "resultType": "vector",
-        "result": [
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "prod",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "5368709120"],  # 5 GB
-            },
-            {
-                "metric": {
-                    "__name__": "dirsize_total_size_bytes",
-                    "directory": "testuser",
-                    "namespace": "staging",
-                    "username": "testuser",
-                },
-                "value": [1771314216.003, "2684354560"],  # 2.5 GB
-            },
-        ],
-    },
-}
-
-# Very large quota (terabytes)
-PROMETHEUS_QUOTA_TERABYTES = {
+# Multi-namespace responses used for namespace selection and parse tests
+# (prod=200GB, staging=10GB — distinct values to verify correct namespace is picked)
+PROMETHEUS_MULTI_NS_QUOTA = {
     "status": "success",
     "data": {
         "resultType": "vector",
@@ -332,13 +158,22 @@ PROMETHEUS_QUOTA_TERABYTES = {
                     "namespace": "prod",
                     "username": "testuser",
                 },
-                "value": [1771314029.985, "1099511627776"],  # 1 TB
+                "value": [1771314029.985, "214748364800"],  # 200 GB
+            },
+            {
+                "metric": {
+                    "__name__": "dirsize_hard_limit_bytes",
+                    "directory": "testuser",
+                    "namespace": "staging",
+                    "username": "testuser",
+                },
+                "value": [1771314029.985, "10737418240"],  # 10 GB
             },
         ],
     },
 }
 
-PROMETHEUS_USAGE_TERABYTES = {
+PROMETHEUS_MULTI_NS_USAGE = {
     "status": "success",
     "data": {
         "resultType": "vector",
@@ -350,7 +185,33 @@ PROMETHEUS_USAGE_TERABYTES = {
                     "namespace": "prod",
                     "username": "testuser",
                 },
-                "value": [1771314216.003, "549755813888"],  # 512 GB
+                "value": [1771314216.003, "6615040"],
+            },
+            {
+                "metric": {
+                    "__name__": "dirsize_total_size_bytes",
+                    "directory": "testuser",
+                    "namespace": "staging",
+                    "username": "testuser",
+                },
+                "value": [1771314216.003, "243240960"],
+            },
+        ],
+    },
+}
+
+PROMETHEUS_MULTI_NS_TIMESTAMP = {
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "directory": "testuser",
+                    "namespace": "staging",
+                    "username": "testuser",
+                },
+                "value": [1771314216.003, "1771314216.003"],
             },
         ],
     },

@@ -1,58 +1,8 @@
 """Shared pytest fixtures for jupyterhub-usage-quota-service tests"""
 
 import pytest
-import respx
 from fastapi.testclient import TestClient
-from httpx import Response
 from unittest.mock import AsyncMock
-from itsdangerous import URLSafeTimedSerializer
-
-from tests.fixtures.jupyterhub_responses import (
-    JUPYTERHUB_TOKEN_RESPONSE,
-    JUPYTERHUB_USER_RESPONSE,
-)
-
-
-def get_secret_key(app):
-    """Extract the secret key from SessionMiddleware"""
-    from starlette.middleware.sessions import SessionMiddleware
-
-    for middleware in app.user_middleware:
-        if middleware.cls == SessionMiddleware:
-            return middleware.kwargs.get("secret_key")
-    raise ValueError("SessionMiddleware not found in app")
-
-
-def encode_session(app, session_data: dict) -> str:
-    """
-    Encode session data into a signed cookie value compatible with Starlette's SessionMiddleware.
-
-    Args:
-        app: The FastAPI application instance
-        session_data: Dictionary of session data to encode
-
-    Returns:
-        Signed session cookie value
-    """
-    secret_key = get_secret_key(app)
-    serializer = URLSafeTimedSerializer(secret_key, salt="cookie-session")
-    return serializer.dumps(session_data)
-
-
-def decode_session(app, cookie_value: str) -> dict:
-    """
-    Decode a signed session cookie value.
-
-    Args:
-        app: The FastAPI application instance
-        cookie_value: The signed cookie value
-
-    Returns:
-        Dictionary of session data
-    """
-    secret_key = get_secret_key(app)
-    serializer = URLSafeTimedSerializer(secret_key, salt="cookie-session")
-    return serializer.loads(cookie_value)
 
 
 def set_session(client: TestClient, app, session_data: dict):
@@ -78,7 +28,7 @@ def set_session(client: TestClient, app, session_data: dict):
         return JSONResponse({"status": "ok"})
 
     # Make a request to set the session
-    response = client.get("/__test_set_session__")
+    client.get("/__test_set_session__")
 
     # Clean up the test endpoint
     # Find and remove the test route
@@ -164,17 +114,19 @@ def mock_session_user():
     }
 
 
-@pytest.fixture
-def mock_prometheus_client(mocker):
-    """Mock PrometheusClient for route tests"""
+def _make_mock_prometheus_client(mocker, usage_data: dict) -> AsyncMock:
     mock_client = AsyncMock()
-
-    # Mock context manager protocol
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    mock_client.get_user_usage.return_value = usage_data
+    mocker.patch("jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client)
+    return mock_client
 
-    # Default successful response (50% usage)
-    mock_client.get_user_usage.return_value = {
+
+@pytest.fixture
+def mock_prometheus_client(mocker):
+    """Mock PrometheusClient for route tests (50% usage)"""
+    return _make_mock_prometheus_client(mocker, {
         "username": "testuser",
         "usage_bytes": 5368709120,
         "quota_bytes": 10737418240,
@@ -182,58 +134,31 @@ def mock_prometheus_client(mocker):
         "quota_gb": 10.0,
         "percentage": 50.0,
         "last_updated": "2026-02-24T12:00:00+00:00",
-    }
-
-    mocker.patch(
-        "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-    )
-    return mock_client
+    })
 
 
 @pytest.fixture
 def mock_prometheus_client_with_error(mocker):
     """Mock PrometheusClient that returns an error"""
-    mock_client = AsyncMock()
-    mock_client.__aenter__.return_value = mock_client
-    mock_client.__aexit__.return_value = None
-
-    mock_client.get_user_usage.return_value = {
+    return _make_mock_prometheus_client(mocker, {
         "username": "testuser",
         "error": "Unable to reach Prometheus. Please try again later.",
-    }
-
-    mocker.patch(
-        "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-    )
-    return mock_client
+    })
 
 
 @pytest.fixture
 def mock_prometheus_client_no_data(mocker):
     """Mock PrometheusClient that returns no data error"""
-    mock_client = AsyncMock()
-    mock_client.__aenter__.return_value = mock_client
-    mock_client.__aexit__.return_value = None
-
-    mock_client.get_user_usage.return_value = {
+    return _make_mock_prometheus_client(mocker, {
         "username": "testuser",
         "error": "No storage data found for your account.",
-    }
-
-    mocker.patch(
-        "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-    )
-    return mock_client
+    })
 
 
 @pytest.fixture
 def mock_prometheus_client_high_usage(mocker):
     """Mock PrometheusClient that returns high usage (95%)"""
-    mock_client = AsyncMock()
-    mock_client.__aenter__.return_value = mock_client
-    mock_client.__aexit__.return_value = None
-
-    mock_client.get_user_usage.return_value = {
+    return _make_mock_prometheus_client(mocker, {
         "username": "testuser",
         "usage_bytes": 10200547328,
         "quota_bytes": 10737418240,
@@ -241,41 +166,13 @@ def mock_prometheus_client_high_usage(mocker):
         "quota_gb": 10.0,
         "percentage": 95.0,
         "last_updated": "2026-02-24T12:00:00+00:00",
-    }
-
-    mocker.patch(
-        "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
-    )
-    return mock_client
+    })
 
 
 @pytest.fixture
 def mock_oauth_state():
     """Generate mock OAuth state token"""
     return "abc123def456ghi789"
-
-
-@pytest.fixture
-def mock_oauth_code():
-    """Generate mock OAuth authorization code"""
-    return "auth_code_xyz789"
-
-
-@pytest.fixture
-def mock_jupyterhub_api():
-    """Mock JupyterHub API endpoints using respx"""
-    with respx.mock:
-        # Token exchange endpoint
-        respx.post("http://test-hub:8081/hub/api/oauth2/token").mock(
-            return_value=Response(200, json=JUPYTERHUB_TOKEN_RESPONSE)
-        )
-
-        # User info endpoint
-        respx.get("http://test-hub:8081/hub/api/user").mock(
-            return_value=Response(200, json=JUPYTERHUB_USER_RESPONSE)
-        )
-
-        yield respx
 
 
 @pytest.fixture
