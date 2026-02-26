@@ -1,6 +1,5 @@
 """Tests for Prometheus integration and client"""
 
-import asyncio
 import random
 from unittest.mock import AsyncMock
 
@@ -49,10 +48,7 @@ class TestParseValueResult:
     def test_returns_none_for_failed_status(self):
         client = PrometheusClient()
         client.namespace = "prod"
-        assert (
-            client._parse_value_result({"status": "error", "error": "bad query"})
-            is None
-        )
+        assert client._parse_value_result({"status": "error", "error": "bad query"}) is None
 
     def test_returns_none_for_empty_results(self):
         client = PrometheusClient()
@@ -132,7 +128,7 @@ class TestPrometheusTimeouts:
         client.namespace = "prod"
 
         # Mock query to raise asyncio.TimeoutError
-        client.query = AsyncMock(side_effect=asyncio.TimeoutError("Connection timeout"))
+        client.query = AsyncMock(side_effect=TimeoutError("Connection timeout"))
 
         usage_data = await client.get_user_usage("testuser")
 
@@ -450,9 +446,7 @@ class TestPrometheusClientQuery:
         client.prometheus_url = "http://prometheus:9090"
 
         with respx.mock:
-            respx.get("http://prometheus:9090/api/v1/query").mock(
-                return_value=httpx.Response(500)
-            )
+            respx.get("http://prometheus:9090/api/v1/query").mock(return_value=httpx.Response(500))
             with pytest.raises(httpx.HTTPStatusError):
                 await client.query("up")
 

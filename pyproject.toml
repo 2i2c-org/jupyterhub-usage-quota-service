@@ -48,6 +48,9 @@ select = [
     "UP",  # pyupgrade
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"jupyterhub_config.py" = ["F821"]  # c is injected by JupyterHub at runtime
+
 [tool.ruff.format]
 quote-style = "double"
 

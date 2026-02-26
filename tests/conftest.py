@@ -1,12 +1,12 @@
 """Shared pytest fixtures for jupyterhub-usage-quota-service tests"""
 
 import sys
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
 
 
 def set_session(client: TestClient, app, session_data: dict):
@@ -21,6 +21,7 @@ def set_session(client: TestClient, app, session_data: dict):
         app: The FastAPI application instance
         session_data: Dictionary of session data to set
     """
+
     # Create a temporary endpoint to set session data
     @app.get("/__test_set_session__")
     async def set_test_session(request: Request):
@@ -34,7 +35,7 @@ def set_session(client: TestClient, app, session_data: dict):
     # Clean up the test endpoint
     # Find and remove the test route
     for i, route in enumerate(app.routes):
-        if hasattr(route, 'path') and route.path == "/__test_set_session__":
+        if hasattr(route, "path") and route.path == "/__test_set_session__":
             app.routes.pop(i)
             break
 
@@ -50,6 +51,7 @@ def get_session(client: TestClient, app) -> dict:
     Returns:
         Dictionary of session data, or empty dict if no session
     """
+
     @app.get("/__test_get_session__")
     async def get_test_session(request: Request):
         return JSONResponse(dict(request.session))
@@ -59,7 +61,7 @@ def get_session(client: TestClient, app) -> dict:
 
     # Clean up the test endpoint
     for i, route in enumerate(app.routes):
-        if hasattr(route, 'path') and route.path == "/__test_get_session__":
+        if hasattr(route, "path") and route.path == "/__test_get_session__":
             app.routes.pop(i)
             break
 
@@ -70,8 +72,8 @@ def get_session(client: TestClient, app) -> dict:
 def app(mock_env_vars):
     """Provide the FastAPI application instance with reloaded environment variables"""
     # Remove the app module from sys.modules to force a reload
-    if 'jupyterhub_usage_quota_service.app.app' in sys.modules:
-        del sys.modules['jupyterhub_usage_quota_service.app.app']
+    if "jupyterhub_usage_quota_service.app.app" in sys.modules:
+        del sys.modules["jupyterhub_usage_quota_service.app.app"]
 
     # Now import the app with the new environment variables
     from jupyterhub_usage_quota_service.app.app import app
@@ -115,54 +117,68 @@ def _make_mock_prometheus_client(mocker, usage_data: dict) -> AsyncMock:
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     mock_client.get_user_usage.return_value = usage_data
-    mocker.patch("jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client)
+    mocker.patch(
+        "jupyterhub_usage_quota_service.app.app.PrometheusClient", return_value=mock_client
+    )
     return mock_client
 
 
 @pytest.fixture
 def mock_prometheus_client(mocker):
     """Mock PrometheusClient for route tests (50% usage)"""
-    return _make_mock_prometheus_client(mocker, {
-        "username": "testuser",
-        "usage_bytes": 5368709120,
-        "quota_bytes": 10737418240,
-        "usage_gb": 5.0,
-        "quota_gb": 10.0,
-        "percentage": 50.0,
-        "last_updated": "2026-02-24T12:00:00+00:00",
-    })
+    return _make_mock_prometheus_client(
+        mocker,
+        {
+            "username": "testuser",
+            "usage_bytes": 5368709120,
+            "quota_bytes": 10737418240,
+            "usage_gb": 5.0,
+            "quota_gb": 10.0,
+            "percentage": 50.0,
+            "last_updated": "2026-02-24T12:00:00+00:00",
+        },
+    )
 
 
 @pytest.fixture
 def mock_prometheus_client_with_error(mocker):
     """Mock PrometheusClient that returns an error"""
-    return _make_mock_prometheus_client(mocker, {
-        "username": "testuser",
-        "error": "Unable to reach Prometheus. Please try again later.",
-    })
+    return _make_mock_prometheus_client(
+        mocker,
+        {
+            "username": "testuser",
+            "error": "Unable to reach Prometheus. Please try again later.",
+        },
+    )
 
 
 @pytest.fixture
 def mock_prometheus_client_no_data(mocker):
     """Mock PrometheusClient that returns no data error"""
-    return _make_mock_prometheus_client(mocker, {
-        "username": "testuser",
-        "error": "No storage data found for your account.",
-    })
+    return _make_mock_prometheus_client(
+        mocker,
+        {
+            "username": "testuser",
+            "error": "No storage data found for your account.",
+        },
+    )
 
 
 @pytest.fixture
 def mock_prometheus_client_high_usage(mocker):
     """Mock PrometheusClient that returns high usage (95%)"""
-    return _make_mock_prometheus_client(mocker, {
-        "username": "testuser",
-        "usage_bytes": 10200547328,
-        "quota_bytes": 10737418240,
-        "usage_gb": 9.5,
-        "quota_gb": 10.0,
-        "percentage": 95.0,
-        "last_updated": "2026-02-24T12:00:00+00:00",
-    })
+    return _make_mock_prometheus_client(
+        mocker,
+        {
+            "username": "testuser",
+            "usage_bytes": 10200547328,
+            "quota_bytes": 10737418240,
+            "usage_gb": 9.5,
+            "quota_gb": 10.0,
+            "percentage": 95.0,
+            "last_updated": "2026-02-24T12:00:00+00:00",
+        },
+    )
 
 
 @pytest.fixture

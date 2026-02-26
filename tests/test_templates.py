@@ -48,9 +48,7 @@ class TestUsageTemplateWithNormalUsage:
         assert metric_remaining is not None
         assert "5.0 GiB remaining" in metric_remaining.text
 
-    def test_progress_bar_width_matches_percentage(
-        self, jinja_env, usage_data_50_percent
-    ):
+    def test_progress_bar_width_matches_percentage(self, jinja_env, usage_data_50_percent):
         """Progress bar should have width: 50.0%"""
         soup = render_template(jinja_env, usage_data_50_percent)
 
@@ -58,9 +56,7 @@ class TestUsageTemplateWithNormalUsage:
         assert progress_fill is not None
         assert "width: 50.0%" in progress_fill.get("style", "")
 
-    def test_uses_normal_styling_below_90_percent(
-        self, jinja_env, usage_data_50_percent
-    ):
+    def test_uses_normal_styling_below_90_percent(self, jinja_env, usage_data_50_percent):
         """Should use green/normal colors for < 90% usage"""
         soup = render_template(jinja_env, usage_data_50_percent)
 
@@ -96,9 +92,7 @@ class TestUsageTemplateWithNormalUsage:
 class TestUsageTemplateWithHighUsage:
     """Test template rendering with high usage (>= 90%)"""
 
-    def test_displays_sad_folder_icon_at_95_percent(
-        self, jinja_env, usage_data_95_percent
-    ):
+    def test_displays_sad_folder_icon_at_95_percent(self, jinja_env, usage_data_95_percent):
         """Should show sad folder icon at 95%"""
         soup = render_template(jinja_env, usage_data_95_percent)
 
@@ -123,9 +117,7 @@ class TestUsageTemplateWithHighUsage:
         progress_fill = soup.find(class_="progress-fill")
         assert "background: #ef4444" in progress_fill.get("style", "")
 
-    def test_remaining_storage_is_red_at_high_usage(
-        self, jinja_env, usage_data_95_percent
-    ):
+    def test_remaining_storage_is_red_at_high_usage(self, jinja_env, usage_data_95_percent):
         """Remaining storage text should be red"""
         soup = render_template(jinja_env, usage_data_95_percent)
 
@@ -144,9 +136,7 @@ class TestUsageTemplateWithHighUsage:
         # At exactly 90%, should have red styling
         assert "#ef4444" in style
 
-    def test_progress_label_is_red_at_high_usage(
-        self, jinja_env, usage_data_95_percent
-    ):
+    def test_progress_label_is_red_at_high_usage(self, jinja_env, usage_data_95_percent):
         """Progress label should be red at high usage"""
         soup = render_template(jinja_env, usage_data_95_percent)
 
@@ -169,9 +159,7 @@ class TestUsageTemplateWithErrors:
         assert error_message is not None
         assert "Unable to reach Prometheus" in error_message.text
 
-    def test_displays_error_icon_not_folder(
-        self, jinja_env, usage_data_prometheus_error
-    ):
+    def test_displays_error_icon_not_folder(self, jinja_env, usage_data_prometheus_error):
         """Should show error icon (not folder icon) on error"""
         soup = render_template(jinja_env, usage_data_prometheus_error)
 
@@ -183,9 +171,7 @@ class TestUsageTemplateWithErrors:
         svg = svgs[0]
         assert 'stroke="#ef4444"' in str(svg) or svg.get("stroke") == "#ef4444"
 
-    def test_error_state_has_no_progress_bar(
-        self, jinja_env, usage_data_prometheus_error
-    ):
+    def test_error_state_has_no_progress_bar(self, jinja_env, usage_data_prometheus_error):
         """Should not render progress bar on error"""
         soup = render_template(jinja_env, usage_data_prometheus_error)
 
@@ -200,9 +186,7 @@ class TestUsageTemplateWithErrors:
         assert error_message is not None
         assert "No storage data found" in error_message.text
 
-    def test_error_message_has_red_styling(
-        self, jinja_env, usage_data_prometheus_error
-    ):
+    def test_error_message_has_red_styling(self, jinja_env, usage_data_prometheus_error):
         """Error text should be styled in red"""
         template = jinja_env.get_template("usage.html")
         html_content = template.render(usage_data=usage_data_prometheus_error)
@@ -216,9 +200,7 @@ class TestUsageTemplateWithErrors:
 class TestUsageTemplateAccessibility:
     """Test template accessibility features"""
 
-    def test_time_element_has_datetime_attribute(
-        self, jinja_env, usage_data_50_percent
-    ):
+    def test_time_element_has_datetime_attribute(self, jinja_env, usage_data_50_percent):
         """time element should have proper datetime attribute"""
         soup = render_template(jinja_env, usage_data_50_percent)
 

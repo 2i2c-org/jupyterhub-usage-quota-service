@@ -6,7 +6,8 @@ import pytest
 import respx
 from fastapi import HTTPException
 from httpx import Response
-from tests.conftest import set_session, get_session
+
+from tests.conftest import get_session, set_session
 
 
 class MockRequest:
@@ -48,9 +49,7 @@ class TestGetCurrentUserDependency:
 class TestCompleteOAuthFlow:
     """Integration test for complete OAuth flow"""
 
-    def test_full_oauth_flow_success(
-        self, client, app, mock_env_vars, mock_prometheus_client
-    ):
+    def test_full_oauth_flow_success(self, client, app, mock_env_vars, mock_prometheus_client):
         """Test complete flow: redirect → callback → authenticated access"""
         with respx.mock:
             # Mock JupyterHub API

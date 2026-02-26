@@ -1,9 +1,10 @@
 """Tests for JupyterHub custom handler"""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
+import pytest
 from jupyterhub.handlers import BaseHandler
+
 from jupyterhub_usage_quota_service.jupyterhub_custom_handler import UsageHandler
 
 

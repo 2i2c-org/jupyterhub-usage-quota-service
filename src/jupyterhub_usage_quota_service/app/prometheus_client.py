@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -72,7 +72,7 @@ class PrometheusClient:
 
     def _parse_timestamp_result(self, data: dict[str, Any]) -> datetime | None:
         pair = self._find_matching_result(data)
-        return datetime.fromtimestamp(float(pair[1]), tz=timezone.utc) if pair else None
+        return datetime.fromtimestamp(float(pair[1]), tz=UTC) if pair else None
 
     def _get_mock_data(self, username: str) -> dict[str, Any]:
         """
@@ -100,7 +100,7 @@ class PrometheusClient:
             "usage_gb": round(usage_gb, 2),
             "quota_gb": round(quota_gb, 2),
             "percentage": round(percentage, 2),
-            "last_updated": datetime.now(tz=timezone.utc).isoformat(),
+            "last_updated": datetime.now(tz=UTC).isoformat(),
         }
 
     async def get_user_usage(self, username: str) -> dict[str, Any]:
@@ -111,34 +111,24 @@ class PrometheusClient:
             Dictionary with usage information, or an error dict if data is unavailable.
         """
         if not self.namespace:
-            logger.warning(
-                "PROMETHEUS_NAMESPACE is not set — returning mock data for development"
-            )
+            logger.warning("PROMETHEUS_NAMESPACE is not set — returning mock data for development")
             return self._get_mock_data(username)
 
         logger.info(f"Fetching usage data for user: {username}")
 
-        base_quota_metric = (
-            f'dirsize_hard_limit_bytes{{namespace!="", directory="{username}"}}'
-        )
-        base_usage_metric = (
-            f'dirsize_total_size_bytes{{namespace!="", directory="{username}"}}'
-        )
+        base_quota_metric = f'dirsize_hard_limit_bytes{{namespace!="", directory="{username}"}}'
+        base_usage_metric = f'dirsize_total_size_bytes{{namespace!="", directory="{username}"}}'
 
         quota_value_query = self._with_label_replace(base_quota_metric)
         usage_value_query = self._with_label_replace(base_usage_metric)
-        usage_timestamp_query = self._with_label_replace(
-            f"timestamp({base_usage_metric})"
-        )
+        usage_timestamp_query = self._with_label_replace(f"timestamp({base_usage_metric})")
 
         try:
             # Execute all three Prometheus queries concurrently
-            quota_value_data, usage_value_data, usage_timestamp_data = (
-                await asyncio.gather(
-                    self.query(quota_value_query),
-                    self.query(usage_value_query),
-                    self.query(usage_timestamp_query),
-                )
+            quota_value_data, usage_value_data, usage_timestamp_data = await asyncio.gather(
+                self.query(quota_value_query),
+                self.query(usage_value_query),
+                self.query(usage_timestamp_query),
             )
         except Exception as e:
             logger.error(f"Error fetching usage data concurrently for {username}: {e}")

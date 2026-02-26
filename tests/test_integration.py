@@ -184,9 +184,7 @@ class TestErrorRecovery:
             assert response.status_code == 200
             assert "50.0%" in response.text
 
-    def test_user_can_re_authenticate_after_session_clear(
-        self, client, app, mock_env_vars
-    ):
+    def test_user_can_re_authenticate_after_session_clear(self, client, app, mock_env_vars):
         """User should be redirected to OAuth if session expires"""
         with respx.mock:
             respx.post("http://test-hub:8081/hub/api/oauth2/token").mock(
