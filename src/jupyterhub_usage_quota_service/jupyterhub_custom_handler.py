@@ -4,6 +4,7 @@ This handler renders an iframe that embeds the usage-quota service.
 """
 
 from jupyterhub.handlers import BaseHandler
+from tornado import web
 
 
 class UsageHandler(BaseHandler):
@@ -16,6 +17,7 @@ class UsageHandler(BaseHandler):
         ns["user"] = self.current_user
         return ns
 
+    @web.authenticated
     async def get(self):
         """Render the usage wrapper template."""
         html = await self.render_template("usage_wrapper.html")

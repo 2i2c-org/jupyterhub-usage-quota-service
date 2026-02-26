@@ -127,7 +127,9 @@ class PrometheusClient:
 
         quota_value_query = self._with_label_replace(base_quota_metric)
         usage_value_query = self._with_label_replace(base_usage_metric)
-        usage_timestamp_query = self._with_label_replace(f"timestamp({base_usage_metric})")
+        usage_timestamp_query = self._with_label_replace(
+            f"timestamp({base_usage_metric})"
+        )
 
         try:
             # Execute all three Prometheus queries concurrently
