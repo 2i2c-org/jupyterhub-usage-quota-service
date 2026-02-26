@@ -49,3 +49,18 @@ class TestUsageHandler:
 
         handler.render_template.assert_called_once_with("usage_wrapper.html")
         handler.write.assert_called_once_with(mock_html)
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        """Unauthenticated users should be redirected to login, not served content"""
+        handler = MagicMock()
+        handler.current_user = None
+        handler.request.method = "GET"
+        handler.get_login_url.return_value = "/hub/login"
+        handler.request.uri = "/services/usage/"
+
+        UsageHandler.get(handler)
+
+        handler.redirect.assert_called_once()
+        redirect_url = handler.redirect.call_args[0][0]
+        assert redirect_url.startswith("/hub/login")
+        handler.render_template.assert_not_called()
