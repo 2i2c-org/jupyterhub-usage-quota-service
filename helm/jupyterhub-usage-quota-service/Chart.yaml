@@ -1,0 +1,5 @@
+apiVersion: v2
+name: jupyterhub-usage-quota-service
+description: A Helm chart for the JupyterHub usage quota service
+version: 0.0.1-set.by.chartpress
+appVersion: 0.1.0-0.dev
