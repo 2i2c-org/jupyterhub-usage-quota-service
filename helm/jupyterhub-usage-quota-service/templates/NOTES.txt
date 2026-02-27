@@ -1,0 +1,28 @@
+jupyterhub-usage-quota-service has been deployed.
+
+Service name : {{ include "jupyterhub-usage-quota-service.usage-quota-service.fullname" . }}
+Service prefix: {{ .Values.jupyterhub.servicePrefix }}
+
+To complete the setup, register this service in your JupyterHub configuration:
+
+  c.JupyterHub.services = [
+      {
+          "name": {{ .Values.jupyterhub.serviceName | quote }},
+          "url": "http://{{ include "jupyterhub-usage-quota-service.usage-quota-service.fullname" . }}:{{ .Values.service.port }}",
+          "api_token": "<same token set in jupyterhub.apiToken>",
+          "oauth_client_id": "service-{{ .Values.jupyterhub.serviceName }}",
+          "oauth_redirect_uri": "<HUB_EXTERNAL_URL>{{ .Values.jupyterhub.servicePrefix }}oauth_callback",
+          "oauth_client_allowed_scopes": ["read:users!user", "read:servers!user"],
+      }
+  ]
+
+  c.JupyterHub.load_roles = [
+      {
+          "name": "usage-quota-service-role",
+          "scopes": ["read:users", "read:servers", "list:users"],
+          "services": [{{ .Values.jupyterhub.serviceName | quote }}],
+      }
+  ]
+
+Make sure .Values.prometheus.url and .Values.prometheus.namespace are set
+so that the service can query Prometheus for storage usage metrics.
