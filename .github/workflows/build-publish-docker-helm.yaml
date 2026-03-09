@@ -10,7 +10,7 @@ on:
       - "LICENSE"
       - "README.md"
       - ".pre-commit-config.yaml"
-      - ".github/**"
+      # - ".github/**"
       - ".gitignore"
     tags:
       - "**"
