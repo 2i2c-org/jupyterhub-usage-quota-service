@@ -1,3 +1,6 @@
+> [!warning]
+> Project archived and merged with  https://github.com/2i2c-org/jupyterhub-usage-quotas
+
 # JupyterHub Usage Quota Service
 
 A JupyterHub service that allows users to check their current storage (and eventually compute) quota and usage. This service integrates with JupyterHub as a menu item and displays usage information by querying Prometheus metrics.
