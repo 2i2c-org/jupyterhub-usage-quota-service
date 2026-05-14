@@ -1,0 +1,12 @@
+charts:
+  - name: jupyterhub-usage-quota-service
+    baseVersion: 0.0.1-0.dev
+    chartPath: helm/jupyterhub-usage-quota-service
+    imagePrefix: ghcr.io/2i2c-org/
+    repo:
+      git: 2i2c-org/jupyterhub-usage-quota-service
+    images:
+      jupyterhub-usage-quota-service:
+        valuesPath: image
+        contextPath: .
+        dockerfilePath: ./Dockerfile

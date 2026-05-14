@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jupyterhub-usage-quota-service.usage-quota-service.fullname" . }}
+  labels:
+    {{- include "jupyterhub-usage-quota-service.labels" . | nindent 4 }}
+    app.kubernetes.io/component: usage-quota-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "jupyterhub-usage-quota-service.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        {{- include "jupyterhub-usage-quota-service.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: usage-quota-service
+      annotations:
+        # checksum of the secret to trigger a rollout when credentials change
+        checksum/secret: {{ include (print .Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.annotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: usage-quota-service
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 9000
+        env:
+        - name: JUPYTERHUB_API_URL
+          value: {{ .Values.jupyterhub.hubUrl }}/hub/api
+        - name: JUPYTERHUB_BASE_URL
+          value: {{ .Values.jupyterhub.hubUrl }}
+        - name: JUPYTERHUB_SERVICE_NAME
+          value: {{ .Values.jupyterhub.serviceName | quote }}
+        - name: JUPYTERHUB_SERVICE_PREFIX
+          value: {{ .Values.jupyterhub.servicePrefix | quote }}
+        - name: PROMETHEUS_URL
+          value: {{ .Values.prometheus.url | quote }}
+        - name: PROMETHEUS_NAMESPACE
+          value: {{ .Values.prometheus.namespace | quote }}
+        - name: JUPYTERHUB_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "jupyterhub-usage-quota-service.usage-quota-service.fullname" . }}
+              key: JUPYTERHUB_API_TOKEN
+        - name: SESSION_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "jupyterhub-usage-quota-service.usage-quota-service.fullname" . }}
+              key: SESSION_SECRET_KEY
+        resources: {{ toJson .Values.resources }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

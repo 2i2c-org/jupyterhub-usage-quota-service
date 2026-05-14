@@ -1,0 +1,91 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+type: object
+properties:
+  nameOverride:
+    type: string
+  fullnameOverride:
+    type: string
+  image:
+    type: object
+    properties:
+      repository:
+        type: string
+      tag:
+        type: string
+      pullPolicy:
+        type: string
+        enum:
+          - Always
+          - IfNotPresent
+          - Never
+    required:
+      - repository
+      - tag
+  jupyterhub:
+    type: object
+    description: JupyterHub integration configuration
+    properties:
+      hubUrl:
+        type: string
+        description: Internal Kubernetes URL to the JupyterHub hub pod
+      serviceName:
+        type: string
+        description: The JupyterHub service name registered in jupyterhub_config.py
+      servicePrefix:
+        type: string
+        description: The URL prefix where the service is mounted under JupyterHub
+      apiToken:
+        type: string
+        description: API token for the service to authenticate with JupyterHub
+    required:
+      - hubUrl
+      - serviceName
+      - servicePrefix
+      - apiToken
+  prometheus:
+    type: object
+    description: Prometheus configuration for fetching storage usage metrics
+    properties:
+      url:
+        type: string
+        description: URL to the Prometheus server
+      namespace:
+        type: string
+        description: Kubernetes namespace used to filter Prometheus metrics by user
+    required:
+      - url
+      - namespace
+  sessionSecretKey:
+    type: string
+    description: Session secret key for signing FastAPI session cookies
+  service:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - ClusterIP
+          - NodePort
+          - LoadBalancer
+      port:
+        type: integer
+    required:
+      - type
+      - port
+  resources:
+    type: object
+  annotations:
+    type: object
+  nodeSelector:
+    type: object
+  affinity:
+    type: object
+  tolerations:
+    type: array
+    items:
+      type: object
+required:
+  - image
+  - jupyterhub
+  - prometheus
+  - service

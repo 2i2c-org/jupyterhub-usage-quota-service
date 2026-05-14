@@ -1,0 +1,70 @@
+name: Build and Publish Docker Images and Helm Chart
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - helm-chart
+    paths-ignore:
+      - "LICENSE"
+      - "README.md"
+      - ".pre-commit-config.yaml"
+      # - ".github/**"
+      - ".gitignore"
+    tags:
+      - "**"
+
+permissions:
+  packages: write
+
+jobs:
+  publish-charts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install chartpress
+        run: pip install chartpress
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Convert values schema
+        run: yq -o json values.schema.yaml > values.schema.json
+        working-directory: helm/jupyterhub-usage-quota-service
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint helm/jupyterhub-usage-quota-service
+
+      - name: Run chartpress
+        run: |
+          chartpress --push
+
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=$(grep "^version:" helm/jupyterhub-usage-quota-service/Chart.yaml | awk '{print $2}')" >> $GITHUB_ENV
+
+      - name: Package Helm Chart
+        run: |
+          helm package helm/jupyterhub-usage-quota-service -d .helm-charts
+
+      - name: Push Helm Chart
+        run: |
+          helm push .helm-charts/jupyterhub-usage-quota-service-${{ env.VERSION }}.tgz oci://ghcr.io/2i2c-org/jupyterhub-usage-quota-service

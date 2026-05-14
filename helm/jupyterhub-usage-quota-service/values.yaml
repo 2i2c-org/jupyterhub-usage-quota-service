@@ -1,0 +1,61 @@
+# Resource naming follows the z2jh pattern:
+# - When fullnameOverride is a string (including ""), use it as the base name and append "usage-quota-service"
+# - When fullnameOverride is not set, combine Release.Name with chart name
+#
+# Examples:
+#   fullnameOverride: ""                          -> resources named "usage-quota-service"
+#   fullnameOverride: "myjupyterhub"              -> resources named "myjupyterhub-usage-quota-service"
+#   (no fullnameOverride)                         -> resources named "{{ .Release.Name }}-usage-quota-service"
+#   (no fullnameOverride, nameOverride: "custom") -> resources named "{{ .Release.Name }}-custom-usage-quota-service"
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/2i2c-org/jupyterhub-usage-quota-service
+  tag: set-by-chartpress
+  pullPolicy: IfNotPresent
+
+# JupyterHub integration configuration
+jupyterhub:
+  # Internal Kubernetes URL to the JupyterHub hub pod
+  # Example: http://hub:8081
+  hubUrl: ""
+  # The JupyterHub service name registered in jupyterhub_config.py
+  serviceName: usage-quota
+  # The URL prefix where the service is mounted under JupyterHub
+  servicePrefix: /services/usage-quota/
+  # API token for the service to authenticate with JupyterHub
+  # Must match the token configured in JupyterHub's services config
+  apiToken: ""
+
+# Prometheus configuration for fetching storage usage metrics
+prometheus:
+  # URL to the Prometheus server
+  # Example: http://prometheus-operated:9090
+  url: ""
+  # Kubernetes namespace used to filter Prometheus metrics by user
+  namespace: ""
+
+# Session secret key for signing FastAPI session cookies.
+# If left empty, a random key is generated and persisted in the Secret
+# (stable across upgrades via lookup). Recommended to set explicitly
+# for predictable deployments.
+sessionSecretKey: ""
+
+service:
+  type: ClusterIP
+  port: 9000
+
+resources: {}
+
+# Annotations applied to the Deployment pod template
+annotations: {}
+
+# Node selector for the Deployment
+nodeSelector: {}
+
+# Affinity rules for the Deployment
+affinity: {}
+
+# Tolerations for the Deployment
+tolerations: []
